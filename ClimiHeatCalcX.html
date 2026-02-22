@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ClimiHeatCalc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&family=Noto+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --bg-app: #f1f5f9; --bg-card: #ffffff; --bg-input: #f3f4f6;
+  --text-main: #0f172a; --text-sub: #64748b; --border: #e2e8f0;
+  --primary: #4f46e5; --primary-light: #e0e7ff;
+  --accent-wbt: #0ea5e9; --accent-globe: #f59e0b; --accent-wbgt: #ec4899;
+  --accent-hkhi: #8b5cf6; --accent-dp: #38bdf8; --accent-gray: #94a3b8; --accent-extra: #10b981;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); --radius: 16px;
+  --font-ui: 'DM Sans', sans-serif; --font-data: 'JetBrains Mono', monospace; --font-head: 'Noto Sans', sans-serif;
+}
+body.dark {
+  --bg-app: #0f172a; --bg-card: #1e293b; --bg-input: #334155;
+  --text-main: #f8fafc; --text-sub: #94a3b8; --border: #334155;
+  --primary: #818cf8; --primary-light: rgba(129, 140, 248, 0.2);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--bg-app); font-family: var(--font-ui); color: var(--text-main); margin: 0; padding: 16px; display: flex; justify-content: center; min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; }
+.app-wrapper { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+h1 { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.02em; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.theme-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-sub); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s; }
+.scale-toggle { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 2px; display: flex; height: 36px; }
+.scale-btn { border: none; background: transparent; padding: 0 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: all 0.2s; }
+.scale-btn.active { background: var(--primary); color: #fff; }
+
+.hero-card { background: #1e293b; border-radius: var(--radius); padding: 24px; color: white; position: relative; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; min-height: 150px; transition: background-color 0.4s ease; }
+.hero-header { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; }
+.hero-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.7); letter-spacing: 0.05em; }
+.hero-val { font-family: var(--font-head); font-size: 3.2rem; font-weight: 800; line-height: 1; z-index: 2; margin-top: 4px; }
+.hero-badge { font-family: var(--font-head); font-size: 0.75rem; font-weight: 800; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 8px; backdrop-filter: blur(4px); text-transform: uppercase; }
+.hero-sub { font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-top: 8px; z-index: 2; display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.hero-tags { display: flex; gap: 8px; margin-top: 12px; z-index: 2; flex-wrap: wrap; }
+.tag { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #fff; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; }
+
+.env-controls { background: var(--bg-card); padding: 8px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; overflow-x: auto; }
+.seg-group { display: flex; background: var(--bg-input); border-radius: 8px; padding: 2px; flex-shrink: 0; }
+.seg-btn { border: none; background: transparent; padding: 6px 10px; font-size: 0.7rem; font-weight: 700; color: var(--text-sub); border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.seg-btn.active { background: var(--bg-card); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+body.dark .seg-btn.active { background: var(--primary); color: white; }
+
+.modes-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.mode-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 2px; cursor: pointer; transition: all 0.2s; }
+.mode-btn i { font-size: 1rem; color: var(--text-sub); margin-bottom: 4px; }
+.mode-btn span { font-size: 0.55rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; white-space: nowrap; }
+.mode-btn.active { background: var(--primary-light); border-color: var(--primary); }
+.mode-btn.active i, .mode-btn.active span { color: var(--primary); }
+.mode-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+body.dark .mode-btn.active i, body.dark .mode-btn.active span { color: #fff; }
+
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 10px; display: none; }
+.panel.show { display: block; }
+
+.search-box { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-input { flex: 1; padding: 12px; border-radius: 10px; border: 2px solid transparent; background: var(--bg-input); color: var(--text-main); font-family: var(--font-ui); font-weight: 500; outline: none; }
+.search-input:focus { background: var(--bg-card); border-color: var(--primary); }
+.btn-icon { background: var(--primary); color: white; border: none; border-radius: 10px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; }
+.btn-icon.secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
+
+select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid transparent; background: var(--bg-input); color: var(--text-main); font-size: 0.95rem; margin-top: 8px; outline: none; }
+.range-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--text-main); }
+.range-wrap label { font-size: 0.75rem; font-weight: 700; width: 60px; }
+.range-wrap input { flex: 1; }
+.range-val { font-family: var(--font-data); font-size: 0.8rem; width: 30px; text-align: right; }
+
+.input-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.input-row:last-child { margin-bottom: 0; }
+.inp-label { font-size: 0.95rem; font-weight: 600; color: var(--text-main); flex: 1; }
+.inp-field { width: 130px; padding: 12px; border-radius: 12px; border: 2px solid transparent; font-family: var(--font-data); font-size: 1.1rem; font-weight: 500; text-align: right; outline: none; background: var(--bg-input); color: var(--text-main); transition: all 0.2s; }
+.inp-field:focus { background: var(--bg-card); border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
+
+.results-grid { display: flex; flex-direction: column; gap: 8px; }
+.res-row { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-left-width: 5px; border-left-style: solid; }
+.res-left { display: flex; flex-direction: column; }
+.res-name { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
+.res-desc { font-size: 0.7rem; color: var(--text-sub); font-weight: 500; }
+.res-val { font-family: var(--font-data); font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+
+/* Forecast Styles */
+.hourly-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 12px 4px; margin-top: 10px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.hourly-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 80px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; scroll-snap-align: start; }
+.hr-time { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); }
+.hr-icon { font-size: 1.2rem; margin: 8px 0; }
+.hr-val { font-family: var(--font-data); font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+
+.metric-select-row { display: flex; flex-direction: column; gap: 6px; margin: 20px 0 10px 0; }
+.metric-select-label { font-size: 0.8rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+.forecast-list { display: flex; flex-direction: column; gap: 8px; background: var(--bg-input); padding: 12px; border-radius: 16px; border: 1px solid var(--border); }
+.forecast-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.forecast-row:last-child { border-bottom: none; }
+.day-name { font-weight: 700; font-size: 0.95rem; width: 50px; color: var(--text-main); }
+.day-icon { width: 30px; text-align: center; font-size: 1.1rem; color: var(--text-sub); }
+.day-min { width: 45px; text-align: right; font-family: var(--font-data); font-weight: 600; font-size: 0.95rem; color: var(--text-sub); }
+.day-max { width: 45px; text-align: left; font-family: var(--font-data); font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+
+.bar-container { flex: 1; height: 6px; background: var(--border); border-radius: 3px; margin: 0 12px; position: relative; overflow: hidden; }
+.bar-fill { position: absolute; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-dp), var(--accent-globe)); }
+.bar-dot { position: absolute; width: 4px; height: 10px; background: var(--text-main); border-radius: 2px; top: -2px; box-shadow: 0 0 2px rgba(0,0,0,0.5); z-index: 2; }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <header>
+    <h1>ClimiHeatCalc</h1>
+    <div class="header-actions">
+      <div class="scale-toggle">
+        <button class="scale-btn active" id="sc-flag" onclick="App.setScale('FLAG')">FLAG</button>
+        <button class="scale-btn" id="sc-ic" onclick="App.setScale('IC')">IC</button>
+        <button class="scale-btn" id="sc-hk" onclick="App.setScale('HK')">HK</button>
+        <button class="scale-btn" id="sc-jp" onclick="App.setScale('JP')">JP</button>
+      </div>
+      <button class="theme-btn" onclick="UI.toggleTheme()"><i class="fas fa-adjust"></i></button>
+    </div>
+  </header>
+
+  <div class="env-controls">
+    <div class="seg-group"><button class="seg-btn active" id="btn-c" onclick="App.setUnitT('C')">°C</button><button class="seg-btn" id="btn-f" onclick="App.setUnitT('F')">°F</button></div>
+    <div class="seg-group"><button class="seg-btn active" id="btn-rh" onclick="App.setUnitM('rh')">RH</button><button class="seg-btn" id="btn-dp" onclick="App.setUnitM('dp')">DP</button></div>
+    <div class="seg-group"><button class="seg-btn active" id="btn-ms" onclick="App.setUnitW('ms')">m/s</button><button class="seg-btn" id="btn-kmh" onclick="App.setUnitW('kmh')">kph</button><button class="seg-btn" id="btn-mph" onclick="App.setUnitW('mph')">mph</button></div>
+    <div class="seg-group"><button class="seg-btn active" id="btn-solar" onclick="App.setUnitR('solar')">Solar</button><button class="seg-btn" id="btn-globe" onclick="App.setUnitR('globe')">Globe</button></div>
+  </div>
+
+  <div class="hero-card" id="hero">
+    <div class="hero-header">
+      <div class="hero-label" id="hero-label">WBGT (Outdoor)</div>
+      <div class="hero-badge" id="hero-cat">Assess</div>
+    </div>
+    <div class="hero-val" id="val-hero">—</div>
+    <div class="hero-sub" id="hero-sub">0.7 Tw + 0.2 Tg + 0.1 Ta</div>
+    <div class="hero-tags" id="hero-tags" style="display:none;"></div>
+  </div>
+
+  <div class="modes-grid" style="margin-top:16px;">
+    <div class="mode-btn" id="mode-live" onclick="App.toggleMode('live')">
+      <i class="fas fa-satellite-dish"></i><span>Live</span>
+    </div>
+    <div class="mode-btn" id="mode-customized" onclick="App.toggleMode('customized')">
+      <i class="fas fa-user-shield"></i><span>Customized</span>
+    </div>
+    <div class="mode-btn" id="mode-weighting" onclick="App.toggleMode('weighting')">
+      <i class="fas fa-sliders-h"></i><span>Weighting</span>
+    </div>
+    <div class="mode-btn" id="mode-indexes" onclick="App.toggleMode('indexes')">
+      <i class="fas fa-thermometer-half"></i><span>Indexes</span>
+    </div>
+    <div class="mode-btn disabled" id="mode-forecast" onclick="App.toggleMode('forecast')">
+      <i class="fas fa-calendar-alt"></i><span>Forecast</span>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-live">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-sub); margin-bottom:10px;">Fetch Live Environment</div>
+    <div class="search-box">
+      <input type="text" id="city-search" class="search-input" placeholder="City or Lat, Lon" onkeydown="if(event.key==='Enter') API.handleSearch()">
+      <button class="btn-icon secondary" onclick="API.geolocate()" title="Use Current Location"><i class="fas fa-location-arrow"></i></button>
+      <button class="btn-icon" onclick="API.handleSearch()"><i class="fas fa-search"></i></button>
+    </div>
+    <div id="live-status" style="font-size: 0.75rem; color: var(--text-sub); font-weight: 600;"></div>
+  </div>
+
+  <div class="panel" id="panel-customized">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-sub); margin-bottom:8px;">Personal Modifiers</div>
+    <select id="sel-clothing" onchange="App.calc()">
+      <option value="0">Standard Work Clothes [+0]</option>
+      <option value="0">Swimwear / Shorts [+0]</option>
+      <option value="1">Polyolefin Coveralls [+1]</option>
+      <option value="2">Double Layer Woven [+2]</option>
+      <option value="3">Double Layer Cloth [+3]</option>
+      <option value="11">Vapor Barrier (Tychem) [+11]</option>
+    </select>
+    <select id="sel-health" onchange="App.calc()">
+      <option value="0">Acclimatized / Healthy [+0 Risk]</option>
+      <option value="1">Unacclimatized [+1 Risk]</option>
+      <option value="2">Vulnerable / Hot Skin [+2 Risk]</option>
+    </select>
+    <select id="sel-workload" onchange="App.calc()">
+      <option value="0">Light (Sitting, Light Walking) [+0 Risk]</option>
+      <option value="1">Moderate (Brisk Walking, Lifting) [+1 Risk]</option>
+      <option value="2">Heavy (Digging, Heavy Lifting) [+2 Risk]</option>
+      <option value="3">Very Heavy (Intense Paced Work) [+3 Risk]</option>
+    </select>
+  </div>
+
+  <div class="panel" id="panel-weighting">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-sub); margin-bottom:10px;">Formula Weighting Preset</div>
+    <select id="sel-weighting-preset" onchange="UI.applyWeightingPreset()" style="margin-bottom:12px;">
+      <option value="default">Default: 0.7Tw + 0.2Tg + 0.1Ta</option>
+      <option value="indoor">Indoors: 0.7Tw + 0.3Ta</option>
+      <option value="desert">High Radiant (Desert): 0.6Tw + 0.3Tg + 0.1Ta</option>
+      <option value="tropical">Tropical: 0.8Tw + 0.2Tg</option>
+      <option value="soaked">Soaked: 1.0Tw + 0.0Ta</option>
+      <option value="hk">Hong Kong: 0.8Tw + 0.05Tg + 0.15Ta</option>
+      <option value="eq_base">Equal Weight (Base): 0.5Tw + 0.5Ta</option>
+      <option value="eq_rad">Equal Weight (Radiant): 0.5Tw + 0.5Tg</option>
+      <option value="urban">Urban Night: 0.7Tw + 0.3Ta (+ 2°)</option>
+      <option value="manual">Manual Configuration</option>
+    </select>
+    <div class="range-wrap"><label>WB</label><input type="range" id="rng-wb" min="0" max="1" step="0.05" value="0.7" oninput="UI.syncWeightingSliders()"><span class="range-val" id="disp-r-wb">0.7</span></div>
+    <div class="range-wrap"><label>Globe</label><input type="range" id="rng-gt" min="0" max="1" step="0.05" value="0.2" oninput="UI.syncWeightingSliders()"><span class="range-val" id="disp-r-gt">0.2</span></div>
+    <div class="range-wrap"><label>DB</label><input type="range" id="rng-db" min="0" max="1" step="0.05" value="0.1" oninput="UI.syncWeightingSliders()"><span class="range-val" id="disp-r-db">0.1</span></div>
+    <div class="range-wrap"><label>Offset</label><input type="range" id="rng-off" min="-5" max="5" step="0.5" value="0" oninput="UI.syncWeightingSliders()"><span class="range-val" id="disp-r-off">0</span></div>
+  </div>
+
+  <div class="panel" id="panel-indexes">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-sub);">Select Index to Override Primary Display</div>
+    <select id="sel-index" onchange="App.calc()">
+      <option value="hi">Heat Index (NWS)</option>
+      <option value="humidex">Humidex</option>
+      <option value="at">Apparent Temp</option>
+    </select>
+  </div>
+
+  <div class="panel" id="panel-forecast">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-sub); text-transform:uppercase;">Next 24 Hours</div>
+    <div class="hourly-scroll" id="hourly-container"></div>
+    
+    <div class="metric-select-row">
+      <span class="metric-select-label">10-Day Forecast Trends</span>
+      <select class="metric-dropdown" id="forecast-metric" onchange="UI.renderForecast()">
+        <option value="temp">Temperature</option>
+        <option value="dp">Dew Point</option>
+        <option value="wbt">Wet Bulb Temp</option>
+        <option value="wbgt_out">WBGT (Outdoor)</option>
+        <option value="hkhi">HK Heat Index</option>
+        <option value="hi">Heat Index (NWS)</option>
+        <option value="humidex">Humidex</option>
+        <option value="rh">Relative Humidity (%)</option>
+        <option value="wind">Wind Speed</option>
+        <option value="solar">Solar Radiation</option>
+      </select>
+    </div>
+    <div class="forecast-list" id="forecast-container"></div>
+  </div>
+
+  <div class="input-card" style="margin-top:16px;">
+    <div class="input-row"><span class="inp-label">Air Temperature *</span><input type="number" id="inp-temp" class="inp-field" placeholder="Required" oninput="App.calc()"></div>
+    <div class="input-row"><span class="inp-label" id="lbl-moist">Relative Humidity % *</span><input type="number" id="inp-moist" class="inp-field" placeholder="Required" oninput="App.calc()"></div>
+    <div class="input-row"><span class="inp-label" id="lbl-wind">Wind Speed</span><input type="number" id="inp-wind" class="inp-field" placeholder="Speed" oninput="App.calc()"></div>
+    <div class="input-row"><span class="inp-label" id="lbl-rad">Solar Load (W/m²)</span><input type="number" id="inp-rad" class="inp-field" placeholder="Radiation" oninput="App.calc()"></div>
+  </div>
+
+  <div class="results-grid" style="margin-top:16px;">
+    <div class="res-row" style="border-left-color: var(--accent-wbt);"><div class="res-left"><span class="res-name">Wet Bulb</span><span class="res-desc">Evaporative Limit</span></div><span class="res-val" id="val-wb">—</span></div>
+    <div class="res-row" style="border-left-color: var(--accent-wbgt);"><div class="res-left"><span class="res-name">WBGT (Indoor)</span><span class="res-desc">0.7 Tw + 0.3 Ta</span></div><span class="res-val" id="val-wbgt-in">—</span></div>
+    <div class="res-row" style="border-left-color: var(--accent-globe);"><div class="res-left"><span class="res-name">Globe Temp</span><span class="res-desc" id="desc-globe">Calculated</span></div><span class="res-val" id="val-globe">—</span></div>
+    <div class="res-row" style="border-left-color: var(--accent-hkhi);"><div class="res-left"><span class="res-name">HK Heat Index</span><span class="res-desc">0.8Tw + 0.05Tg + 0.15Ta</span></div><span class="res-val" id="val-hkhi">—</span></div>
+    <div class="res-row" style="border-left-color: var(--accent-dp);"><div class="res-left"><span class="res-name">Dew Point</span><span class="res-desc">Saturation Temp</span></div><span class="res-val" id="val-dp">—</span></div>
+    <div class="res-row" id="row-custom" style="border-left-color: var(--accent-gray); display:none;"><div class="res-left"><span class="res-name">Custom Index</span><span class="res-desc" id="desc-custom">Ratio</span></div><span class="res-val" id="val-custom">—</span></div>
+    
+    <div id="row-indexes" style="display:none; flex-direction:column; gap:8px;">
+      <div class="res-row" style="border-left-color: var(--accent-extra);"><div class="res-left"><span class="res-name">Heat Index</span><span class="res-desc">NWS Rothfusz</span></div><span class="res-val" id="val-hi">—</span></div>
+      <div class="res-row" style="border-left-color: var(--accent-extra);"><div class="res-left"><span class="res-name">Humidex</span><span class="res-desc">Canada</span></div><span class="res-val" id="val-humidex">—</span></div>
+      <div class="res-row" style="border-left-color: var(--accent-extra);"><div class="res-left"><span class="res-name">Apparent Temp</span><span class="res-desc">Steadman</span></div><span class="res-val" id="val-at">—</span></div>
+      <div class="res-row" style="border-left-color: #3b82f6;"><div class="res-left"><span class="res-name">Wind Chill</span><span class="res-desc">JAG/TI Limit</span></div><span class="res-val" id="val-wc">—</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ─── MODULE: CONFIG & SCALES ─── */
+const Config = {
+    SCALE_FLAG: [ { name: 'No Flag', color: '#94a3b8', text:'#fff', limit: 26.69 }, { name: 'Green', color: '#22c55e', text:'#fff', limit: 29.39 }, { name: 'Yellow', color: '#eab308', text:'#fff', limit: 31.09 }, { name: 'Red', color: '#ef4444', text:'#fff', limit: 32.19 }, { name: 'Black', color: '#0f172a', text:'#fff', limit: Infinity } ],
+    SCALE_JP: [ { name: 'Almost Safe', color: '#218cff', text:'#fff', limit: 20.9 }, { name: 'Caution', color: '#a0d2ff', text:'#000', limit: 24.9 }, { name: 'Warning', color: '#faf500', text:'#000', limit: 27.9 }, { name: 'Severe Warning', color: '#ff9600', text:'#fff', limit: 30.9 }, { name: 'Danger', color: '#ff2800', text:'#fff', limit: Infinity } ],
+    SCALE_IC: [ { name: 'None', color: '#34a853', text:'#fff', limit: 17.9 }, { name: 'Very Minimal', color: '#7bf316', text:'#fff', limit: 19.9 }, { name: 'Minimal', color: '#fee300', text:'#fff', limit: 22.9 }, { name: 'Some', color: '#fa9202', text:'#fff', limit: 24.9 }, { name: 'Moderate', color: '#eb4c01', text:'#fff', limit: 26.9 }, { name: 'Intense', color: '#871e25', text:'#fff', limit: 28.9 }, { name: 'Extreme', color: '#490c72', text:'#fff', limit: 30.9 }, { name: 'Exceptional', color: '#250838', text:'#fff', limit: 32.9 }, { name: 'Very Exceptional', color: '#000000', text:'#51bb58', limit: 34.9 }, { name: 'Hazardous', color: '#355337', text:'#51bb58', limit: 37.9 }, { name: 'Beyond Hazardous', color: '#51bb58', text:'#fff', limit: Infinity } ],
+    SCALE_HK: [ { name: 'No Risk', color: '#34a853', text:'#fff', limit: 29.9 }, { name: 'Amber', color: '#fff100', text:'#000', limit: 31.9 }, { name: 'Red', color: '#e60012', text:'#fff', limit: 33.9 }, { name: 'Black', color: '#000000', text:'#fff', limit: Infinity } ],
+    SCALE_HI: [ { name: 'Safe', color: '#34a853', text:'#fff', limit: 26.6 }, { name: 'Caution', color: '#ffff99', text:'#000', limit: 32.2 }, { name: 'Extreme Caution', color: '#fdd015', text:'#000', limit: 39.4 }, { name: 'Danger', color: '#fb6600', text:'#fff', limit: 51.7 }, { name: 'Extreme Danger', color: '#cc0003', text:'#fff', limit: Infinity } ],
+    SCALE_HUMIDEX: [ { name: 'Little Discomfort', color: '#34a853', text:'#fff', limit: 29.9 }, { name: 'Some Discomfort', color: '#ffff99', text:'#000', limit: 39.9 }, { name: 'Great Discomfort', color: '#fdd015', text:'#000', limit: 45.9 }, { name: 'Dangerous', color: '#fb6600', text:'#fff', limit: 53.9 }, { name: 'Very Dangerous', color: '#cc0003', text:'#fff', limit: Infinity } ]
+};
+
+/* ─── MODULE: PHYSICS ENGINE ─── */
+const Phys = {
+    calcDP: (T, RH) => { const a=17.27, b=237.7; const alpha = ((a*T)/(b+T)) + Math.log(Math.max(RH,1)/100); return (b*alpha)/(a-alpha); },
+    calcRH: (T, DP) => { const a=17.27, b=237.7; const sat = Math.exp((a*T)/(b+T)); const act = Math.exp((a*DP)/(b+DP)); return (act/sat)*100; },
+    calcGlobe: (T, S, W) => { const safeW = Math.max(0.1, W); return 0.01498*S + 1.184*T - 0.0789*T*Math.pow(safeW,0.1) - 2.739; },
+    calcWB: (T, RH) => { const r = Math.max(0.1, Math.min(100, RH)); return T * Math.atan(0.151977 * Math.sqrt(r + 8.313659)) + Math.atan(T + r) - Math.atan(r - 1.676331) + 0.00391838 * Math.pow(r, 1.5) * Math.atan(0.023101 * r) - 4.686035; },
+    calcWindChill: (T, W_ms) => { const W_kmh = W_ms * 3.6; if (T <= 10 && W_kmh >= 4.8) { return 13.12 + 0.6215 * T - 11.37 * Math.pow(W_kmh, 0.16) + 0.3965 * T * Math.pow(W_kmh, 0.16); } return T; },
+    calcIndices: (T, RH, W, Solar, caf, rWB, rGT, rDB, rOff) => {
+        const Tg = (Solar !== null) ? Phys.calcGlobe(T, Solar, W) : T;
+        const Tw = Phys.calcWB(T, RH);
+        let wbgtOut = 0.7*Tw + 0.2*Tg + 0.1*T;
+        const wbgtEff = wbgtOut + caf;
+        const hkhi = 0.8*Tw + 0.05*Tg + 0.15*T + caf;
+        const wbgtIn = 0.7*Tw + 0.3*T;
+        const dp = Phys.calcDP(T, RH);
+        
+        const Tf = T*9/5+32;
+        let hiC = 0;
+        if(Tf < 80) hiC = T; 
+        else {
+            let h = -42.379 + 2.04901523*Tf + 10.14333127*RH - .22475541*Tf*RH - .00683783*Tf*Tf - .05481717*RH*RH + .00122874*Tf*Tf*RH + .00085282*Tf*RH*RH - .00000199*Tf*Tf*RH*RH;
+            if(RH<13 && Tf>80 && Tf<112) h -= ((13-RH)/4)*Math.sqrt((17-Math.abs(Tf-95.))/17);
+            if(RH>85 && Tf>80 && Tf<87) h += ((RH-85)/10) * ((87-Tf)/5);
+            hiC = (h-32)*5/9;
+        }
+        
+        const e = 6.11 * Math.exp(5417.7530 * ((1/273.16) - (1/(273.15 + dp))));
+        const humidex = T + 0.5555 * (e - 10);
+        const at = -2.7 + 1.04*T + 2.0*(e/10) - 0.65*W;
+        const cust = rWB*Tw + rGT*Tg + rDB*T + (rOff || 0);
+        const wc = Phys.calcWindChill(T, W);
+
+        return { Tw, Tg, wbgtOut, wbgtEff, wbgtIn, hkhi, dp, hiC, humidex, at, cust, wc };
+    }
+};
+
+/* ─── MODULE: APP STATE & LOGIC ─── */
+const App = {
+    unitT: 'C', unitW: 'ms', modeMoist: 'rh', modeRad: 'solar', scaleMode: 'FLAG',
+    modes: { live: false, customized: false, weighting: false, indexes: false, forecast: false },
+    rWB: 0.7, rGT: 0.2, rDB: 0.1, rOff: 0,
+    forecastData: null, currentHourIdx: 0,
+
+    init: function() {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark');
+        }
+    },
+
+    setScale: function(s) {
+        this.scaleMode = s;
+        ['FLAG','IC','HK','JP'].forEach(id => {
+            document.getElementById('sc-'+id.toLowerCase()).className = s===id ? 'scale-btn active':'scale-btn';
+        });
+        this.calc();
+    },
+
+    setUnitT: function(u) {
+        if(this.unitT === u) return;
+        ['inp-temp','inp-moist','inp-rad'].forEach(id => {
+            const el = document.getElementById(id);
+            if(id==='inp-temp' && el.value) el.value = (parseFloat(u==='C'?(el.value-32)*5/9:el.value*9/5+32)).toFixed(1);
+            if(id==='inp-moist' && this.modeMoist==='dp' && el.value) el.value = (parseFloat(u==='C'?(el.value-32)*5/9:el.value*9/5+32)).toFixed(1);
+            if(id==='inp-rad' && this.modeRad==='globe' && el.value) el.value = (parseFloat(u==='C'?(el.value-32)*5/9:el.value*9/5+32)).toFixed(1);
+        });
+        this.unitT = u;
+        document.getElementById('btn-c').className = u==='C'?'seg-btn active':'seg-btn';
+        document.getElementById('btn-f').className = u==='F'?'seg-btn active':'seg-btn';
+        this.calc();
+        if(this.modes.forecast && this.forecastData) UI.renderForecast();
+    },
+
+    setUnitM: function(m) {
+        const elM = document.getElementById('inp-moist');
+        const elT = document.getElementById('inp-temp');
+        if(elM.value && elT.value && this.modeMoist !== m) {
+            const val = parseFloat(elM.value);
+            const T = this.unitT==='C' ? parseFloat(elT.value) : (elT.value-32)*5/9;
+            if(m==='dp') {
+                const dp = Phys.calcDP(T, val);
+                elM.value = (this.unitT==='C'?dp:dp*9/5+32).toFixed(1);
+            } else {
+                const dpC = this.unitT==='C'?val:(val-32)*5/9;
+                elM.value = Phys.calcRH(T, dpC).toFixed(1);
+            }
+        }
+        this.modeMoist = m;
+        document.getElementById('btn-rh').className = m==='rh'?'seg-btn active':'seg-btn';
+        document.getElementById('btn-dp').className = m==='dp'?'seg-btn active':'seg-btn';
+        this.calc();
+    },
+
+    setUnitW: function(w) {
+        const el = document.getElementById('inp-wind');
+        if(el.value) {
+            let v = parseFloat(el.value);
+            let ms = v;
+            if(this.unitW==='kmh') ms = v/3.6; if(this.unitW==='mph') ms = v/2.237;
+            let final = ms;
+            if(w==='kmh') final = ms*3.6; if(w==='mph') final = ms*2.237;
+            el.value = parseFloat(final.toFixed(2));
+        }
+        this.unitW = w;
+        ['ms','kmh','mph'].forEach(id => {
+            document.getElementById('btn-'+id).className = w===id?'seg-btn active':'seg-btn';
+        });
+        this.calc();
+    },
+
+    setUnitR: function(r) {
+        this.modeRad = r;
+        document.getElementById('btn-solar').className = r==='solar'?'seg-btn active':'seg-btn';
+        document.getElementById('btn-globe').className = r==='globe'?'seg-btn active':'seg-btn';
+        this.calc();
+    },
+
+    toggleMode: function(m) {
+        if(m === 'forecast' && !this.modes.live) {
+            alert("Forecast requires Live mode to be active.");
+            return;
+        }
+
+        this.modes[m] = !this.modes[m];
+        
+        // Mutually exclusive: Weighting and Indexes
+        if(m === 'weighting' && this.modes.weighting && this.modes.indexes) {
+            this.modes.indexes = false;
+            document.getElementById('mode-indexes').classList.remove('active');
+            document.getElementById('panel-indexes').classList.remove('show');
+        }
+        if(m === 'indexes' && this.modes.indexes && this.modes.weighting) {
+            this.modes.weighting = false;
+            document.getElementById('mode-weighting').classList.remove('active');
+            document.getElementById('panel-weighting').classList.remove('show');
+        }
+        
+        // Disable Forecast visually if Live is turned off
+        if(m === 'live' && !this.modes.live) {
+            this.modes.forecast = false;
+            this.forecastData = null;
+            document.getElementById('mode-forecast').classList.remove('active');
+            document.getElementById('panel-forecast').classList.remove('show');
+            document.getElementById('mode-forecast').classList.add('disabled');
+            document.getElementById('live-status').innerText = "";
+        } else if (m === 'live' && this.modes.live) {
+            document.getElementById('mode-forecast').classList.remove('disabled');
+        }
+
+        document.getElementById('mode-'+m).classList.toggle('active', this.modes[m]);
+        document.getElementById('panel-'+m).classList.toggle('show', this.modes[m]);
+        
+        document.getElementById('row-custom').style.display = this.modes.weighting ? 'flex' : 'none';
+        document.getElementById('row-indexes').style.display = this.modes.indexes ? 'flex' : 'none';
+        
+        this.calc();
+    },
+
+    calc: function() {
+        const vTemp = parseFloat(document.getElementById('inp-temp').value);
+        const vMoist = parseFloat(document.getElementById('inp-moist').value);
+        if(isNaN(vTemp) || isNaN(vMoist)) { UI.resetHero(); return; }
+        
+        const T = this.unitT==='C' ? vTemp : (vTemp-32)*5/9;
+        const vWind = parseFloat(document.getElementById('inp-wind').value);
+        let W = 0.5;
+        if(!isNaN(vWind)) {
+            if(this.unitW==='ms') W=vWind; if(this.unitW==='kmh') W=vWind/3.6; if(this.unitW==='mph') W=vWind/2.237;
+        }
+        
+        let RH = 50;
+        if(this.modeMoist==='rh') RH = vMoist;
+        else RH = Phys.calcRH(T, this.unitT==='C' ? vMoist : (vMoist-32)*5/9);
+
+        let Solar = null, Tg_input = null;
+        const vRad = parseFloat(document.getElementById('inp-rad').value);
+        if(!isNaN(vRad)) {
+            if(this.modeRad==='solar') Solar = vRad;
+            if(this.modeRad==='globe') Tg_input = this.unitT==='C' ? vRad : (vRad-32)*5/9;
+        }
+
+        let caf = 0;
+        if(this.modes.customized) {
+            caf = parseFloat(document.getElementById('sel-clothing').value);
+        }
+
+        let res;
+        if(Tg_input !== null) {
+            const Tw = Phys.calcWB(T, RH);
+            const Tg = Tg_input;
+            let wbgtOut = 0.7*Tw + 0.2*Tg + 0.1*T;
+            const wbgtEff = wbgtOut + caf;
+            const hkhi = 0.8*Tw + 0.05*Tg + 0.15*T + caf;
+            const wbgtIn = 0.7*Tw + 0.3*T;
+            const dp = Phys.calcDP(T, RH);
+            const fallback = Phys.calcIndices(T,RH,W,0,0,0,0,0,0);
+            const cust = this.rWB*Tw + this.rGT*Tg + this.rDB*T + this.rOff;
+            res = { Tw, Tg, wbgtOut, wbgtEff, wbgtIn, hkhi, dp, hiC: fallback.hiC, humidex: fallback.humidex, at: fallback.at, cust, wc: fallback.wc };
+        } else {
+            res = Phys.calcIndices(T, RH, W, Solar, caf, this.rWB, this.rGT, this.rDB, this.rOff);
+        }
+
+        UI.updateHero(res.wbgtEff, res.hkhi, caf, res);
+        
+        UI.updateVal('val-wb', res.Tw); UI.updateVal('val-wbgt-in', res.wbgtIn);
+        UI.updateVal('val-globe', res.Tg); UI.updateVal('val-hkhi', res.hkhi);
+        UI.updateVal('val-dp', res.dp); UI.updateVal('val-custom', res.cust); 
+        UI.updateVal('val-hi', res.hiC); UI.updateVal('val-humidex', res.humidex); 
+        UI.updateVal('val-at', res.at); UI.updateVal('val-wc', res.wc);
+    }
+};
+
+/* ─── MODULE: WEATHER API ─── */
+const API = {
+    geolocate: function() {
+        document.getElementById('live-status').innerText = "Locating...";
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                document.getElementById('city-search').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                this.fetchWeather(lat, lon, "Your Location");
+            }, err => {
+                document.getElementById('live-status').innerText = "Geolocation failed.";
+            });
+        } else {
+            document.getElementById('live-status').innerText = "Geolocation not supported.";
+        }
+    },
+    handleSearch: async function() {
+        const q = document.getElementById('city-search').value.trim();
+        if(!q) return;
+        document.getElementById('live-status').innerText = "Searching...";
+        
+        // Check if lat/lon coordinate format
+        if(q.includes(',')) {
+            const parts = q.split(',');
+            const lat = parseFloat(parts[0]);
+            const lon = parseFloat(parts[1]);
+            if(!isNaN(lat) && !isNaN(lon)) {
+                this.fetchWeather(lat, lon, "Coordinates");
+                return;
+            }
+        }
+        
+        try {
+            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1&language=en&format=json`);
+            const geoData = await geoRes.json();
+            if(!geoData.results) { document.getElementById('live-status').innerText = "City not found."; return; }
+            this.fetchWeather(geoData.results[0].latitude, geoData.results[0].longitude, `${geoData.results[0].name}, ${geoData.results[0].country_code}`);
+        } catch(e) {
+            document.getElementById('live-status').innerText = "Network Error.";
+        }
+    },
+    fetchWeather: async function(lat, lon, locName) {
+        document.getElementById('live-status').innerText = `Fetching data for ${locName}...`;
+        try {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,shortwave_radiation,weathercode&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,shortwave_radiation,weathercode,dew_point_2m&forecast_days=10`;
+            const wRes = await fetch(url);
+            const data = await wRes.json();
+            
+            App.forecastData = data;
+            const nowStr = data.current.time;
+            App.currentHourIdx = data.hourly.time.indexOf(nowStr);
+            if(App.currentHourIdx === -1) App.currentHourIdx = 0;
+            
+            // Auto-populate inputs
+            const T = data.current.temperature_2m;
+            const RH = data.current.relative_humidity_2m;
+            const W_ms = data.current.wind_speed_10m * 0.75; // 2m estimate
+            const Sol = data.current.shortwave_radiation;
+            
+            App.unitT = 'C'; App.modeMoist = 'rh'; App.unitW = 'ms'; App.modeRad = 'solar';
+            document.getElementById('btn-c').className = 'seg-btn active'; document.getElementById('btn-f').className = 'seg-btn';
+            document.getElementById('btn-rh').className = 'seg-btn active'; document.getElementById('btn-dp').className = 'seg-btn';
+            document.getElementById('btn-ms').className = 'seg-btn active'; document.getElementById('btn-kmh').className = 'seg-btn'; document.getElementById('btn-mph').className = 'seg-btn';
+            document.getElementById('btn-solar').className = 'seg-btn active'; document.getElementById('btn-globe').className = 'seg-btn';
+
+            document.getElementById('inp-temp').value = T.toFixed(1);
+            document.getElementById('inp-moist').value = RH.toFixed(1);
+            document.getElementById('inp-wind').value = W_ms.toFixed(1);
+            document.getElementById('inp-rad').value = Sol;
+            
+            document.getElementById('live-status').innerText = `Data applied for ${locName}`;
+            
+            App.calc();
+            if(App.modes.forecast) UI.renderForecast();
+
+        } catch(e) {
+            document.getElementById('live-status').innerText = "Failed to fetch weather data.";
+        }
+    }
+};
+
+/* ─── MODULE: UI CONTROLS ─── */
+const UI = {
+    toggleTheme: function() {
+        document.body.classList.toggle('dark');
+    },
+    
+    applyWeightingPreset: function() {
+        const p = document.getElementById('sel-weighting-preset').value;
+        if(p === 'manual') return; 
+        
+        let w=0.7, g=0.2, d=0.1, o=0;
+        if(p==='indoor') { w=0.7; g=0; d=0.3; }
+        if(p==='desert') { w=0.6; g=0.3; d=0.1; }
+        if(p==='tropical') { w=0.8; g=0.2; d=0; }
+        if(p==='soaked') { w=1.0; g=0; d=0; }
+        if(p==='hk') { w=0.8; g=0.05; d=0.15; }
+        if(p==='eq_base') { w=0.5; g=0; d=0.5; }
+        if(p==='eq_rad') { w=0.5; g=0.5; d=0; }
+        if(p==='urban') { w=0.7; g=0; d=0.3; o=2; }
+        
+        document.getElementById('rng-wb').value = w;
+        document.getElementById('rng-gt').value = g;
+        document.getElementById('rng-db').value = d;
+        document.getElementById('rng-off').value = o;
+        this.syncWeightingSliders(true);
+    },
+
+    syncWeightingSliders: function(skipPresetReset) {
+        App.rWB = parseFloat(document.getElementById('rng-wb').value);
+        App.rGT = parseFloat(document.getElementById('rng-gt').value);
+        App.rDB = parseFloat(document.getElementById('rng-db').value);
+        App.rOff = parseFloat(document.getElementById('rng-off').value);
+        
+        document.getElementById('disp-r-wb').innerText = App.rWB;
+        document.getElementById('disp-r-gt').innerText = App.rGT;
+        document.getElementById('disp-r-db').innerText = App.rDB;
+        document.getElementById('disp-r-off').innerText = App.rOff > 0 ? '+'+App.rOff : App.rOff;
+        
+        if(!skipPresetReset) document.getElementById('sel-weighting-preset').value = 'manual';
+        App.calc();
+    },
+
+    updateHero: function(wbgt, hkhi, caf, res) {
+        const isHK = App.scaleMode==='HK';
+        let baseVal = isHK ? hkhi : wbgt; 
+        let dispVal = baseVal;
+        let labelText = isHK ? "HK Heat Index" : "WBGT (Outdoor)";
+        
+        let scale = Config.SCALE_FLAG;
+        if(App.scaleMode==='IC') scale = Config.SCALE_IC;
+        if(App.scaleMode==='HK') scale = Config.SCALE_HK;
+        if(App.scaleMode==='JP') scale = Config.SCALE_JP;
+
+        if(App.modes.weighting) {
+            dispVal = res.cust;
+            baseVal = res.cust;
+            labelText = "Weighting Override";
+        } else if(App.modes.indexes) {
+            const selIdx = document.getElementById('sel-index').value;
+            const selText = document.getElementById('sel-index').options[document.getElementById('sel-index').selectedIndex].text;
+            if(selIdx === 'hi') { dispVal = res.hiC; baseVal = res.hiC; scale = Config.SCALE_HI; }
+            if(selIdx === 'humidex') { dispVal = res.humidex; baseVal = res.humidex; scale = Config.SCALE_HUMIDEX; }
+            if(selIdx === 'at') { dispVal = res.at; baseVal = res.at; scale = Config.SCALE_HI; }
+            labelText = selText;
+        }
+
+        let evalWBGT = baseVal;
+        
+        if (App.modes.customized && !App.modes.indexes && ['FLAG', 'HK', 'JP'].includes(App.scaleMode)) {
+            let impactLevel = parseInt(document.getElementById('sel-health').value) + parseInt(document.getElementById('sel-workload').value);
+            if (impactLevel > 0) {
+                let factor = Math.min(1, Math.max(0, (baseVal - 16) / 10)); 
+                evalWBGT += (impactLevel * 1.5 * factor);
+            }
+        }
+
+        let catIndex = scale.length - 1;
+        for(let i=0; i<scale.length; i++) {
+            if(evalWBGT < scale[i].limit) { catIndex = i; break; }
+        }
+
+        let cat = scale[catIndex];
+        const finalDisp = App.unitT==='C' ? dispVal : (dispVal*9/5+32);
+        
+        document.getElementById('val-hero').innerText = finalDisp.toFixed(1) + '°';
+        document.getElementById('hero-cat').innerText = cat.name;
+        document.getElementById('hero').style.background = cat.color;
+        document.getElementById('hero-label').innerText = labelText;
+        
+        let sub = isHK ? "0.8 Tw + 0.05 Tg + 0.15 Ta" : "0.7 Tw + 0.2 Tg + 0.1 Ta";
+        if(App.modes.weighting) sub = "Custom Preset Base";
+        if(App.modes.indexes) sub = "Alternative Index Active";
+        if(App.modes.customized && caf > 0) sub = `<i class="fas fa-tshirt"></i> Base + ${caf}° CAF`;
+        
+        document.getElementById('hero-sub').innerHTML = sub;
+        
+        const vEl = document.getElementById('val-hero');
+        if(cat.text) vEl.style.color = cat.text; else vEl.style.color = 'white';
+        
+        let tagsEl = document.getElementById('hero-tags');
+        if(App.modes.customized) {
+            const wl = parseInt(document.getElementById('sel-workload').value);
+            let riskTier = 0;
+            if(scale === Config.SCALE_FLAG || scale === Config.SCALE_JP || scale === Config.SCALE_HI || scale === Config.SCALE_HUMIDEX) {
+                if(catIndex <= 1) riskTier = 0; else if(catIndex === 2) riskTier = 1; else if(catIndex === 3) riskTier = 2; else riskTier = 3;
+            } else if(scale === Config.SCALE_HK) {
+                riskTier = catIndex;
+            } else {
+                if(catIndex <= 3) riskTier = 0; else if(catIndex <= 5) riskTier = 1; else if(catIndex <= 7) riskTier = 2; else riskTier = 3;
+            }
+            
+            let rest = "10m / 2hr", water = "0.5 L/hr";
+            if (riskTier === 0) { if (wl >= 2) rest = "15m / 2hr"; } 
+            else if (riskTier === 1) { water = "0.75 L/hr"; if (wl <= 1) rest = "15m / hr"; else if (wl === 2) rest = "30m / hr"; else rest = "45m / hr"; } 
+            else if (riskTier === 2) { water = "1.0 L/hr"; if (wl <= 1) rest = "30m / hr"; else if (wl === 2) rest = "45m / hr"; else rest = "Suspend Work"; } 
+            else { water = "1.2 L/hr"; if (wl === 0) rest = "45m / hr"; else rest = "Suspend Work"; }
+            
+            tagsEl.innerHTML = `<span class="tag"><i class="fas fa-bed"></i> ${rest}</span><span class="tag"><i class="fas fa-tint"></i> ${water}</span>`;
+            tagsEl.style.display = 'flex';
+        } else {
+            tagsEl.style.display = 'none';
+        }
+    },
+
+    updateVal: function(id, v) {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const d = App.unitT==='C' ? v : (v*9/5+32);
+        el.innerText = d.toFixed(1) + '°';
+    },
+
+    resetHero: function() {
+        document.getElementById('val-hero').innerText = '—';
+        document.getElementById('hero').style.background = '#1e293b';
+        document.getElementById('hero-cat').innerText = 'Assess';
+        document.getElementById('hero-tags').style.display = 'none';
+    },
+
+    getIcon: function(code) {
+        if(code <= 1) return '<i class="fas fa-sun" style="color:#facc15"></i>';
+        if(code <= 3) return '<i class="fas fa-cloud-sun" style="color:#94a3b8"></i>';
+        if(code <= 49) return '<i class="fas fa-cloud" style="color:#64748b"></i>';
+        if(code <= 69) return '<i class="fas fa-cloud-rain" style="color:#38bdf8"></i>';
+        if(code <= 79) return '<i class="fas fa-snowflake" style="color:#bae6fd"></i>';
+        if(code <= 99) return '<i class="fas fa-bolt" style="color:#f59e0b"></i>';
+        return '<i class="fas fa-cloud"></i>';
+    },
+
+    renderForecast: function() {
+        if(!App.forecastData) return;
+        
+        const h = App.forecastData.hourly;
+        const cur = App.forecastData.current;
+        const startIdx = h.time.findIndex(t => t >= cur.time);
+
+        // Render 24H Scroll
+        const hrCont = document.getElementById('hourly-container');
+        hrCont.innerHTML = '';
+        for(let i=startIdx; i<startIdx+24; i++) {
+            if(!h.time[i]) break;
+            const tDate = new Date(h.time[i]);
+            const t = tDate.getHours();
+            let label = (t%12===0 ? 12 : t%12) + (t >= 12 ? ' PM' : ' AM');
+            if(i === startIdx) label = "Now";
+            const tempD = App.unitT==='C' ? h.temperature_2m[i] : (h.temperature_2m[i]*9/5+32);
+            let icon = this.getIcon(h.weathercode[i]);
+            hrCont.innerHTML += `<div class="hourly-card"><div class="hr-time">${label}</div><div class="hr-icon">${icon}</div><div class="hr-val">${tempD.toFixed(0)}°</div></div>`;
+        }
+        
+        // Render 10-Day Apple Style
+        const metric = document.getElementById('forecast-metric').value;
+        const container = document.getElementById('forecast-container');
+        container.innerHTML = '';
+        
+        let daysData = [], weekMin = 99999, weekMax = -99999;
+        
+        for(let d=0; d<10; d++) {
+            let start = d*24;
+            let end = start+24;
+            if(start >= h.time.length) break;
+            
+            let dMin = 99999, dMax = -99999;
+            let dCode = h.weathercode[start+12] || h.weathercode[start]; 
+            let currentVal = null; 
+            
+            for(let i=start; i<end; i++) {
+                if(i >= h.time.length) break;
+                
+                const T = h.temperature_2m[i]; const RH = h.relative_humidity_2m[i];
+                const W = h.wind_speed_10m[i] * 0.75; const Sol = h.shortwave_radiation[i];
+                
+                let val;
+                if(metric === 'temp') val = T;
+                else if(metric === 'rh') val = RH;
+                else if(metric === 'solar') val = Sol;
+                else if(metric === 'wind') val = W;
+                else {
+                    const res = Phys.calcIndices(T, RH, W, Sol, 0, 0.7,0.2,0.1, 0);
+                    if(metric==='wbt') val = res.Tw;
+                    if(metric==='wbgt_out') val = res.wbgtOut;
+                    if(metric==='hkhi') val = res.hkhi;
+                    if(metric==='dp') val = res.dp;
+                    if(metric==='hi') val = res.hiC;
+                    if(metric==='humidex') val = res.humidex;
+                }
+                
+                let fVal = val;
+                if(['temp','wbt','wbgt_out','hkhi','dp','hi','humidex'].includes(metric)) {
+                    fVal = App.unitT==='C' ? val : (val*9/5+32);
+                } else if(['wind'].includes(metric)) {
+                    fVal = App.unitW==='ms' ? val : (App.unitW==='kmh' ? val*3.6 : val*2.237);
+                }
+                
+                if(fVal > dMax) dMax = fVal;
+                if(fVal < dMin) dMin = fVal;
+                if(fVal > weekMax) weekMax = fVal;
+                if(fVal < weekMin) weekMin = fVal;
+                
+                if(i === App.currentHourIdx) currentVal = fVal;
+            }
+            
+            const dateObj = new Date(h.time[start]);
+            let dayName = d === 0 ? 'Today' : dateObj.toLocaleDateString('en-US', {weekday:'short'});
+            daysData.push({ dayName, dMin, dMax, dCode, currentVal });
+        }
+        
+        let range = weekMax - weekMin;
+        if(range === 0) range = 1;
+
+        daysData.forEach(d => {
+            const leftPct = ((d.dMin - weekMin) / range) * 100;
+            const widthPct = ((d.dMax - d.dMin) / range) * 100;
+            
+            let suffix = '';
+            if(metric==='rh') suffix = '%';
+            
+            let minTxt = d.dMin.toFixed(0) + (['temp','wbt','wbgt_out','hkhi','dp','hi','humidex'].includes(metric) ? '°' : suffix);
+            let maxTxt = d.dMax.toFixed(0) + (['temp','wbt','wbgt_out','hkhi','dp','hi','humidex'].includes(metric) ? '°' : suffix);
+            
+            let dotHtml = '';
+            if(d.currentVal !== null) {
+                const dotPos = ((d.currentVal - d.dMin) / (d.dMax - d.dMin || 1)) * 100;
+                dotHtml = `<div class="bar-dot" style="left: ${dotPos}%;"></div>`;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'forecast-row';
+            row.innerHTML = `
+                <div class="day-name">${d.dayName}</div>
+                <div class="day-icon">${this.getIcon(d.dCode)}</div>
+                <div class="day-min">${minTxt}</div>
+                <div class="bar-container"><div class="bar-fill" style="left: ${leftPct}%; width: ${widthPct}%;">${dotHtml}</div></div>
+                <div class="day-max">${maxTxt}</div>
+            `;
+            container.appendChild(row);
+        });
+    }
+};
+
+App.init();
+</script>
+</body>
+</html>
